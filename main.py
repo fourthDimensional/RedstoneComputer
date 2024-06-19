@@ -8,6 +8,17 @@ def custom_range(n):
         return range(0, n, -1)
 
 
+def parse_instructions(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    stripped_lines = [''.join(ch for ch in line if ch in '10\n') for line in lines]
+
+    instructions = [line.strip() for line in stripped_lines]
+
+    return instructions
+
+
 def find_redstone_torches(schematic, corner):
     structure = schematic.getStructure()
 
@@ -49,7 +60,54 @@ def find_redstone_torches(schematic, corner):
     return redstone_torches
 
 
+def torches_to_binary(redstone_torches):
+    # Initialize the counts for each dimension
+    x_count = set()
+    y_count = set()
+    z_count = set()
+
+    # Count the occurrences of each dimension
+    for x, y, z in redstone_torches:
+        x_count.add(x)
+        y_count.add(y)
+        z_count.add(z)
+
+    x_count = sorted(x_count)
+    y_count = sorted(y_count)
+    z_count = sorted(z_count)
+
+    bit_points = []
+    # The dimension that isn't shared is the one with the most unique values
+    if len(x_count) > len(y_count) and len(x_count) > len(z_count):
+        unique_dim = 'x'
+        for x in range(min(x_count), max(x_count) + 1, 2):
+            bit_points.append((x, y_count[0], z_count[0]))
+    elif len(y_count) > len(x_count) and len(y_count) > len(z_count):
+        unique_dim = 'y'
+        for y in range(min(y_count), max(y_count) + 1, 2):
+            bit_points.append((x_count[0], y, z_count[0]))
+    else:
+        unique_dim = 'z'
+        for z in range(min(z_count), max(z_count) + 1, 2):
+            bit_points.append((x_count[0], y_count[0], z))
+
+    print(f"Unique Dimension: {unique_dim}")
+    # Initialize the binary string
+    binary_string = ''
+
+    print(bit_points)
+
+    return binary_string
+
+
 schematic = mcschematic.MCSchematic(
     "schematics/6bitsegmentNE.schem")  # Loads a programmable ROM segment with 6 bits and is torch based.
 
-print(find_redstone_torches(schematic, 'NE'))
+redstone_torches = find_redstone_torches(schematic, 'NE')
+print(f'Redstone Torches: {redstone_torches}')
+binary_string = torches_to_binary(redstone_torches)
+print(f'String: {binary_string}')
+
+instructions = parse_instructions('instructions.txt')\
+
+print(instructions)
