@@ -1,10 +1,12 @@
 import mcschematic
 
+
 def custom_range(n):
     if n >= 0:
         return range(n)
     else:
         return range(0, n, -1)
+
 
 def find_redstone_torches(schematic, corner):
     structure = schematic.getStructure()
@@ -24,9 +26,15 @@ def find_redstone_torches(schematic, corner):
     # Adjust the signs based on the corner
     if corner == 'NE':
         width, height, length = -width, -height, length
+    elif corner == 'NW':
+        width, height, length = width, -height, length
+    elif corner == 'SE':
+        width, height, length = -width, height, length
+    elif corner == 'SW':
+        width, height, length = width, height, length
 
     print(f"Width: {width}, Height: {height}, Length: {length}")
-    print(range(-5)) # Results in range(0, -5) instead of range(0, -1, 2), custom range fixes this
+    print(range(-5))  # Results in range(0, -5) instead of range(0, -1, 2), custom range fixes this
 
     redstone_torches = []
     for x in custom_range(width):
@@ -40,6 +48,8 @@ def find_redstone_torches(schematic, corner):
 
     return redstone_torches
 
-schematic = mcschematic.MCSchematic("schematics/6bitsegmentNE.schem") # Loads a programmable ROM segment with 6 bits and is torch based.
+
+schematic = mcschematic.MCSchematic(
+    "schematics/6bitsegmentNE.schem")  # Loads a programmable ROM segment with 6 bits and is torch based.
 
 print(find_redstone_torches(schematic, 'NE'))
