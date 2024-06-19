@@ -19,7 +19,7 @@ def parse_instructions(file_path):
     return instructions
 
 
-def find_redstone_torches(schematic, corner):
+def schematic_to_binary_string(schematic, corner):
     structure = schematic.getStructure()
 
     # Get the bounds of the structure
@@ -44,23 +44,14 @@ def find_redstone_torches(schematic, corner):
     elif corner == 'SW':
         width, height, length = width, height, length
 
-    print(f"Width: {width}, Height: {height}, Length: {length}")
-    print(range(-5))  # Results in range(0, -5) instead of range(0, -1, 2), custom range fixes this
-
     redstone_torches = []
     for x in custom_range(width):
         for y in custom_range(height):
             for z in custom_range(length):
-                print(f"Checking block at ({x}, {y}, {z})")
                 block_data = schematic.getBlockDataAt((x, y, z))
                 if 'redstone_wall_torch' in block_data:
-                    print(f"Found redstone torch at ({x}, {y}, {z})")
                     redstone_torches.append((x, y, z))
 
-    return redstone_torches
-
-
-def torches_to_binary(redstone_torches):
     # Initialize the counts for each dimension
     x_count = set()
     y_count = set()
@@ -80,34 +71,85 @@ def torches_to_binary(redstone_torches):
     # The dimension that isn't shared is the one with the most unique values
     if len(x_count) > len(y_count) and len(x_count) > len(z_count):
         unique_dim = 'x'
-        for x in range(min(x_count), max(x_count) + 1, 2):
-            bit_points.append((x, y_count[0], z_count[0]))
+        for x in range(0, length + 1, 2):
+            bit_points.append(x)
+        actual_points = x_count
     elif len(y_count) > len(x_count) and len(y_count) > len(z_count):
         unique_dim = 'y'
-        for y in range(min(y_count), max(y_count) + 1, 2):
-            bit_points.append((x_count[0], y, z_count[0]))
+        for y in range(0, length + 1, 2):
+            bit_points.append(y)
+        actual_points = y_count
     else:
         unique_dim = 'z'
-        for z in range(min(z_count), max(z_count) + 1, 2):
-            bit_points.append((x_count[0], y_count[0], z))
+        for z in range(0, length + 1, 2):
+            bit_points.append(z)
+        actual_points = z_count
 
-    print(f"Unique Dimension: {unique_dim}")
+    bit_points = [int(point/2) for point in bit_points]
+    actual_points = [int(point/2) for point in actual_points]
+
     # Initialize the binary string
     binary_string = ''
 
-    print(bit_points)
+    # Generate the binary string
+    for point in bit_points:
+        if point in actual_points:
+            binary_string += '1'
+        else:
+            binary_string += '0'
 
     return binary_string
 
 
+def binary_string_to_schematic(binary_string, corner, direction, mcb=True):
+    # Initialize an empty schematic
+    schematic = mcschematic.MCSchematic()
+
+    if corner == 'NE':
+        x, y, z = -1, -1, 1
+        torch_face = 'WEST'
+    elif corner == 'NW':
+        x, y, z = -1, -1, 1
+        torch_face = 'EAST'
+    elif corner == 'SE':
+        x, y, z = -1, -1, -1
+        torch_face = 'NORTH'
+    else:
+        x, y, z = -1, -1, 1
+        torch_face = 'SOUTH'
+
+    # Iterate over the binary string
+    for i, bit in enumerate(binary_string):
+        if bit == '1':
+            # Calculate the corresponding coordinates
+
+            if direction == 'x':
+                x = i*2
+            elif direction == 'y':
+                y = i*2
+            else:
+                z = i*2
+
+            print(x, y, z)
+            # Add a redstone torch at the calculated location
+            schematic.setBlock((x, y, z), 'minecraft:redstone_wall_torch[facing=' + torch_face + ']')
+            print('1')
+        else:
+            print('0')
+
+    return schematic
+
+
 schematic = mcschematic.MCSchematic(
-    "schematics/6bitsegmentNE.schem")  # Loads a programmable ROM segment with 6 bits and is torch based.
+    "schematics/calibration.schem")  # Loads a programmable ROM segment with 6 bits and is torch based.
 
-redstone_torches = find_redstone_torches(schematic, 'NE')
-print(f'Redstone Torches: {redstone_torches}')
-binary_string = torches_to_binary(redstone_torches)
-print(f'String: {binary_string}')
+print(schematic_to_binary_string(schematic, 'NE'))
 
-instructions = parse_instructions('instructions.txt')\
+binary_string = '010111111111111100'
+schematic = binary_string_to_schematic(binary_string, 'SE', 'x', True)
+schematic.save("schematics", "test", mcschematic.Version.JE_1_18_2)
 
-print(instructions)
+
+# instructions = parse_instructions('instructions.txt')
+#
+# print(instructions)
